@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Robot Syair - Modul Penulisan Syair Kanak-Kanak</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Google Fonts - Fredoka & Quicksand -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'robot-yellow': '#FEF08A',
+            'robot-blue': '#BAE6FD',
+            'robot-pink': '#FBCFE8',
+            'robot-green': '#BBF7D0',
+            'robot-purple': '#DDD6FE',
+            'brand-primary': '#4F46E5',
+            'brand-accent': '#06B6D4'
+          },
+          fontFamily: {
+            'bubbly': ['Fredoka', 'sans-serif'],
+            'body': ['Quicksand', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Quicksand', sans-serif;
+      background: linear-gradient(135deg, #E0F2FE 0%, #FCE7F3 50%, #FEF9C3 100%);
+      min-height: 100vh;
+    }
+    h1, h2, h3, h4, .font-bubbly {
+      font-family: 'Fredoka', sans-serif;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(2deg); }
+    }
+    .animate-float {
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes pulse-gentle {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+    .animate-bounce-gentle {
+      animation: pulse-gentle 2s infinite;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
+      border: 3px solid rgba(255, 255, 255, 0.6);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    }
+    .btn-bubbly {
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+    }
+    .btn-bubbly:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 7px 0 rgba(0,0,0,0.15);
+    }
+    .btn-bubbly:active:not(:disabled) {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 rgba(0,0,0,0.15);
+    }
+    .songket-border {
+      background-image: radial-gradient(#4F46E5 1.5px, transparent 1.5px), radial-gradient(#06B6D4 1.5px, #ffffff 1.5px);
+      background-size: 20px 20px;
+      background-position: 0 0, 10px 10px;
+    }
+  </style>
+</head>
+<body class="text-slate-800 pb-12">
+
+  <!-- TOP NAVIGATION HEADER -->
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b-4 border-amber-300 px-4 py-3 shadow-md">
+    <div class="max-w-5xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 bg-amber-400 rounded-2xl flex items-center justify-center text-white text-2xl shadow-inner border-2 border-amber-500 animate-bounce-gentle">
+          <i class="fa-solid fa-robot"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-indigo-900 leading-none">Robot Syair</h1>
+          <p class="text-xs font-semibold text-amber-600">Sahabat Penulis Muda Tahap 2</p>
+        </div>
+      </div>
+      
+      <div class="flex gap-2">
+        <button onclick="showSection('step-theme')" class="px-3 py-1.5 rounded-xl bg-sky-100 text-sky-700 font-bubbly text-sm hover:bg-sky-200 transition">
+          <i class="fa-solid fa-compass mr-1"></i> Pilih Tema
+        </button>
+        <button onclick="showSection('step-write')" class="px-3 py-1.5 rounded-xl bg-pink-100 text-pink-700 font-bubbly text-sm hover:bg-pink-200 transition">
+          <i class="fa-solid fa-pen-nib mr-1"></i> Tulis Syair
+        </button>
+        <button onclick="openHelpModal()" class="px-3 py-1.5 rounded-xl bg-purple-100 text-purple-700 font-bubbly text-sm hover:bg-purple-200 transition">
+          <i class="fa-solid fa-circle-question mr-1"></i> Panduan
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-5xl mx-auto px-4 mt-6">
+    
+    <!-- MASKOT ROBOT HEADER BANNER -->
+    <div class="glass-card rounded-3xl p-6 mb-8 border-4 border-indigo-200 flex flex-col md:flex-row items-center gap-6 relative overflow-hidden">
+      <div class="w-32 h-32 md:w-40 md:h-40 relative flex-shrink-0 animate-float">
+        <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-xl">
+          <line x1="100" y1="40" x2="100" y2="15" stroke="#6366F1" stroke-width="6" stroke-linecap="round"/>
+          <circle id="bot-antenna-ball" cx="100" cy="12" r="10" fill="#F59E0B" />
+          <rect x="40" y="40" width="120" height="90" rx="25" fill="#818CF8" stroke="#3730A3" stroke-width="5"/>
+          <rect x="55" y="55" width="90" height="60" rx="15" fill="#1E1B4B"/>
+          <circle id="bot-eye-left" cx="78" cy="80" r="10" fill="#38BDF8" />
+          <circle id="bot-eye-right" cx="122" cy="80" r="10" fill="#38BDF8" />
+          <path id="bot-mouth" d="M 80 100 Q 100 115 120 100" fill="none" stroke="#F43F5E" stroke-width="5" stroke-linecap="round"/>
+          <circle cx="68" cy="95" r="6" fill="#F472B6" opacity="0.6"/>
+          <circle cx="132" cy="95" r="6" fill="#F472B6" opacity="0.6"/>
+          <rect x="70" y="130" width="60" height="40" rx="10" fill="#C084FC" stroke="#3730A3" stroke-width="4"/>
+          <circle cx="100" cy="150" r="8" fill="#FEF08A"/>
+        </svg>
+      </div>
+
+      <div class="flex-1 text-center md:text-left">
+        <div class="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold mb-2">
+          <i class="fa-solid fa-sparkles text-amber-500"></i> Rakan Puisi Kanak-Kanak
+        </div>
+        <h2 id="robot-speech-title" class="text-2xl md:text-3xl font-bold text-indigo-950 mb-2">
+          Hai! Saya Robot Syair! 🤖✨
+        </h2>
+        <p id="robot-speech-text" class="text-slate-600 text-base md:text-lg leading-relaxed">
+          Mari kita cipta syair indah bersama-sama. Ingat ya, syair ada <b>4 baris</b> setiap rangkap dan bunyinya mestilah <b>sama di hujung baris (a-a-a-a)</b>!
+        </p>
+
+        <div id="bot-tip-box" class="mt-4 p-3 bg-amber-50 border-2 border-amber-200 rounded-2xl flex items-center gap-3 text-sm text-amber-900">
+          <i class="fa-solid fa-lightbulb text-amber-500 text-xl flex-shrink-0"></i>
+          <span id="bot-tip-text">Petunjuk Robot: Sijil hanya boleh dibuka sekiranya kesemua 4 baris mempunyai 8-12 suku kata dan rima a-a-a-a yang betul!</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEKSYEN 1: PILIHAN TEMA & PROMPT -->
+    <section id="step-theme" class="space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-2xl font-bold text-indigo-900">Langkah 1: Pilih Tema Syair Saya</h3>
+          <p class="text-sm text-slate-500">Pilih tema kegemaran atau taip tema khas yang anda suka!</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <button onclick="selectTheme('Alam Sekitar', '🌳', 'Keindahan bukit, sungai, pokok dan menjaga bumi kita.')"
+          class="theme-card glass-card p-4 rounded-2xl border-4 border-emerald-200 hover:border-emerald-400 text-center flex flex-col items-center justify-center transition group btn-bubbly bg-emerald-50/50">
+          <span class="text-4xl mb-2 group-hover:scale-125 transition">🌳</span>
+          <span class="font-bubbly font-bold text-emerald-900 text-base">Alam Sekitar</span>
+          <span class="text-xs text-emerald-600 mt-1">Hutan & Sungai</span>
+        </button>
+
+        <button onclick="selectTheme('Hormati Guru', '👨‍🏫', 'Jasa guru mengajar kita membaca dan menjadi insan berguna.')"
+          class="theme-card glass-card p-4 rounded-2xl border-4 border-sky-200 hover:border-sky-400 text-center flex flex-col items-center justify-center transition group btn-bubbly bg-sky-50/50">
+          <span class="text-4xl mb-2 group-hover:scale-125 transition">👨‍🏫</span>
+          <span class="font-bubbly font-bold text-sky-900 text-base">Hormati Guru</span>
+          <span class="text-xs text-sky-600 mt-1">Jasa Penabur Ilmu</span>
+        </button>
+
+        <button onclick="selectTheme('Rukun Negara', '🇲🇾', 'Cinta akan tanah air Malaysia yang aman dan bersatu padu.')"
+          class="theme-card glass-card p-4 rounded-2xl border-4 border-rose-200 hover:border-rose-400 text-center flex flex-col items-center justify-center transition group btn-bubbly bg-rose-50/50">
+          <span class="text-4xl mb-2 group-hover:scale-125 transition">🇲🇾</span>
+          <span class="font-bubbly font-bold text-rose-900 text-base">Rukun Negara</span>
+          <span class="text-xs text-rose-600 mt-1">Patriotik & Taat</span>
+        </button>
+
+        <button onclick="selectTheme('Sahabat Baik', '🤝', 'Kesetiaan dan kegembiraan bermain bersama kawan-kawan.')"
+          class="theme-card glass-card p-4 rounded-2xl border-4 border-purple-200 hover:border-purple-400 text-center flex flex-col items-center justify-center transition group btn-bubbly bg-purple-50/50">
+          <span class="text-4xl mb-2 group-hover:scale-125 transition">🤝</span>
+          <span class="font-bubbly font-bold text-purple-900 text-base">Sahabat Baik</span>
+          <span class="text-xs text-purple-600 mt-1">Kawan & Setia</span>
+        </button>
+
+        <button onclick="selectTheme('Menuntut Ilmu', '📚', 'Rajin belajar untuk masa depan yang cemerlang.')"
+          class="theme-card glass-card p-4 rounded-2xl border-4 border-amber-200 hover:border-amber-400 text-center flex flex-col items-center justify-center transition group btn-bubbly bg-amber-50/50">
+          <span class="text-4xl mb-2 group-hover:scale-125 transition">📚</span>
+          <span class="font-bubbly font-bold text-amber-900 text-base">Menuntut Ilmu</span>
+          <span class="text-xs text-amber-600 mt-1">Rajin Belajar</span>
+        </button>
+      </div>
+
+      <div class="glass-card rounded-3xl p-6 border-4 border-indigo-200 space-y-4">
+        <div>
+          <label class="block font-bubbly font-bold text-indigo-900 mb-1">Atau Taip Tema Pilihan Sendiri:</label>
+          <div class="flex gap-2">
+            <input type="text" id="custom-theme-input" placeholder="Contoh: Kucing Kesayangan Saya / Bonda Tercinta / Hobi Sukan" 
+              class="flex-1 px-4 py-3 rounded-2xl border-2 border-indigo-300 focus:border-indigo-500 focus:outline-none text-slate-700 font-medium">
+            <button onclick="applyCustomTheme()" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bubbly font-bold rounded-2xl btn-bubbly">
+              Guna Tema Ini
+            </button>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t-2 border-indigo-100">
+          <h4 class="font-bubbly font-bold text-slate-700 mb-2 flex items-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i> Contoh Prompt / Idea Permulaan Robot Syair:
+          </h4>
+          <div class="flex flex-wrap gap-2" id="prompt-pills">
+            <button onclick="usePrompt('Wahai pemuda rajin belajar,')" class="px-3 py-1.5 bg-white border border-indigo-200 hover:bg-indigo-50 rounded-xl text-xs font-semibold text-indigo-800 transition">
+              💡 "Wahai pemuda rajin belajar,"
+            </button>
+            <button onclick="usePrompt('Alam indah ciptaan Tuhan,')" class="px-3 py-1.5 bg-white border border-indigo-200 hover:bg-indigo-50 rounded-xl text-xs font-semibold text-indigo-800 transition">
+              💡 "Alam indah ciptaan Tuhan,"
+            </button>
+            <button onclick="usePrompt('Guru mengajar tanpa lelah,')" class="px-3 py-1.5 bg-white border border-indigo-200 hover:bg-indigo-50 rounded-xl text-xs font-semibold text-indigo-800 transition">
+              💡 "Guru mengajar tanpa lelah,"
+            </button>
+            <button onclick="usePrompt('Malaysia negara yang tercinta,')" class="px-3 py-1.5 bg-white border border-indigo-200 hover:bg-indigo-50 rounded-xl text-xs font-semibold text-indigo-800 transition">
+              💡 "Malaysia negara yang tercinta,"
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEKSYEN 2: STUDIO PEMBINA SYAIR -->
+    <section id="step-write" class="space-y-6 hidden">
+      <div class="flex items-center justify-between">
+        <div>
+          <span id="active-theme-tag" class="inline-block px-3 py-1 bg-amber-200 text-amber-900 rounded-full text-xs font-bold mb-1">
+            Tema: Belum Dipilih
+          </span>
+          <h3 class="text-2xl font-bold text-indigo-900">Langkah 2: Studio Penulisan Syair</h3>
+        </div>
+
+        <!-- UBAH TEKS BUTANG KEPADA 'PENUH' -->
+        <button onclick="generateAIExample()" class="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-2xl font-bubbly font-bold text-sm btn-bubbly shadow-md">
+          <i class="fa-solid fa-robot mr-1"></i> Minta Robot Tunjuk Contoh Penuh
+        </button>
+      </div>
+
+      <div class="glass-card rounded-3xl p-6 border-4 border-indigo-200 space-y-5">
+        <p class="text-xs text-slate-500 font-semibold bg-indigo-50 p-2.5 rounded-xl">
+          📌 <b>Peraturan Syarat Sijil:</b> Lengkapkan 4 baris. Setiap baris mesti <b>8 hingga 12 suku kata</b> dan rima akhir <b>a-a-a-a (bunyi hujung sama)</b>.
+        </p>
+
+        <!-- BARIS 1 -->
+        <div class="p-4 rounded-2xl bg-white/80 border-2 border-indigo-100 space-y-2 relative">
+          <div class="flex items-center justify-between">
+            <label class="font-bubbly font-bold text-indigo-950 text-sm flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs">1</span>
+              Baris Pertama:
+            </label>
+            <div class="flex items-center gap-2">
+              <span id="syllable-count-1" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">0 Suku Kata</span>
+              <span id="rhyme-tag-1" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">Rima: -</span>
+            </div>
+          </div>
+          <input type="text" id="line-1" oninput="analyzeLine(1)" placeholder="Dengarlah anak ibu berpesan," 
+            class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:outline-none text-slate-800 font-semibold text-base">
+          <p id="feedback-line-1" class="text-xs font-medium text-slate-500 italic"></p>
+        </div>
+
+        <!-- BARIS 2 -->
+        <div class="p-4 rounded-2xl bg-white/80 border-2 border-indigo-100 space-y-2 relative">
+          <div class="flex items-center justify-between">
+            <label class="font-bubbly font-bold text-indigo-950 text-sm flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs">2</span>
+              Baris Kedua:
+            </label>
+            <div class="flex items-center gap-2">
+              <span id="syllable-count-2" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">0 Suku Kata</span>
+              <span id="rhyme-tag-2" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">Rima: -</span>
+            </div>
+          </div>
+          <input type="text" id="line-2" oninput="analyzeLine(2)" placeholder="Menuntut ilmu jadikan amalan," 
+            class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:outline-none text-slate-800 font-semibold text-base">
+          <p id="feedback-line-2" class="text-xs font-medium text-slate-500 italic"></p>
+        </div>
+
+        <!-- BARIS 3 -->
+        <div class="p-4 rounded-2xl bg-white/80 border-2 border-indigo-100 space-y-2 relative">
+          <div class="flex items-center justify-between">
+            <label class="font-bubbly font-bold text-indigo-950 text-sm flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs">3</span>
+              Baris Ketiga:
+            </label>
+            <div class="flex items-center gap-2">
+              <span id="syllable-count-3" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">0 Suku Kata</span>
+              <span id="rhyme-tag-3" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">Rima: -</span>
+            </div>
+          </div>
+          <input type="text" id="line-3" oninput="analyzeLine(3)" placeholder="Janganlah malas wahai rakan," 
+            class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:outline-none text-slate-800 font-semibold text-base">
+          <p id="feedback-line-3" class="text-xs font-medium text-slate-500 italic"></p>
+        </div>
+
+        <!-- BARIS 4 -->
+        <div class="p-4 rounded-2xl bg-white/80 border-2 border-indigo-100 space-y-2 relative">
+          <div class="flex items-center justify-between">
+            <label class="font-bubbly font-bold text-indigo-950 text-sm flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs">4</span>
+              Baris Keempat:
+            </label>
+            <div class="flex items-center gap-2">
+              <span id="syllable-count-4" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">0 Suku Kata</span>
+              <span id="rhyme-tag-4" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">Rima: -</span>
+            </div>
+          </div>
+          <input type="text" id="line-4" oninput="analyzeLine(4)" placeholder="Kelak hidupmu cerah masa depan." 
+            class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:outline-none text-slate-800 font-semibold text-base">
+          <p id="feedback-line-4" class="text-xs font-medium text-slate-500 italic"></p>
+        </div>
+
+        <div class="pt-2 space-y-3">
+          <div id="validation-msg" class="p-3 bg-rose-50 border-2 border-rose-200 rounded-xl text-xs font-bold text-rose-700 text-center">
+            🔒 Sijil dikunci: Sila pastikan kesemua 4 baris lengkap, berima sama (a-a-a-a) dan mengandungi 8-12 suku kata.
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <button onclick="toggleRhymeHelper()" class="px-4 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-2xl font-bubbly font-bold text-sm btn-bubbly flex items-center gap-2">
+              <i class="fa-solid fa-magnifying-glass text-amber-600"></i> Cari Kata Rima Akhir
+            </button>
+
+            <button id="btn-submit-syair" onclick="finalizeSyair()" disabled 
+              class="px-8 py-3.5 bg-slate-300 text-slate-500 cursor-not-allowed rounded-2xl font-bubbly font-bold text-base btn-bubbly shadow-none flex items-center gap-2 transition-all">
+              <i class="fa-solid fa-lock text-xl" id="submit-icon"></i> <span id="submit-text">Semak & Perlihatkan Syair</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="rhyme-helper" class="hidden mt-4 p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bubbly font-bold text-amber-900 text-sm">💡 Cadangan Perkataan Berima Akhir:</h4>
+            <button onclick="toggleRhymeHelper()" class="text-amber-700 text-xs font-bold">Tutup ✖</button>
+          </div>
+          <p class="text-xs text-amber-800">Klik bunyi vokal/suku kata akhir yang anda mahu:</p>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="showRhymeWords('an')" class="px-3 py-1 bg-white border border-amber-300 rounded-xl text-xs font-bold text-amber-900 hover:bg-amber-100">...an (pesan, amalan)</button>
+            <button onclick="showRhymeWords('it')" class="px-3 py-1 bg-white border border-amber-300 rounded-xl text-xs font-bold text-amber-900 hover:bg-amber-100">...it (langit, bukit)</button>
+            <button onclick="showRhymeWords('i')" class="px-3 py-1 bg-white border border-amber-300 rounded-xl text-xs font-bold text-amber-900 hover:bg-amber-100">...i (budi, suci)</button>
+            <button onclick="showRhymeWords('ah')" class="px-3 py-1 bg-white border border-amber-300 rounded-xl text-xs font-bold text-amber-900 hover:bg-amber-100">...ah (indah, sekolah)</button>
+            <button onclick="showRhymeWords('ar')" class="px-3 py-1 bg-white border border-amber-300 rounded-xl text-xs font-bold text-amber-900 hover:bg-amber-100">...ar (belajar, pintar)</button>
+          </div>
+          <div id="rhyme-words-display" class="p-3 bg-white rounded-xl text-xs font-medium text-slate-700 border border-amber-200">
+            Pilih mana-mana rima di atas untuk melihat cadangan kata!
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SEKSYEN 3: KAD HASIL & SIJIL PENULIS MUDA -->
+    <section id="step-result" class="space-y-6 hidden">
+      <div class="text-center space-y-2">
+        <span class="inline-block px-4 py-1 bg-emerald-100 text-emerald-800 rounded-full font-bubbly font-bold text-sm">
+          🎉 Tahniah! Syair Anda Sempurna & Berjaya Dicipta!
+        </span>
+        <h3 class="text-3xl font-bold text-indigo-950">Kad Syair & Sijil Penulis Muda</h3>
+      </div>
+
+      <div id="syair-card" class="max-w-2xl mx-auto glass-card rounded-3xl p-8 border-8 border-indigo-300 relative overflow-hidden shadow-2xl songket-border">
+        <div class="bg-white/95 rounded-2xl p-6 border-4 border-amber-300 text-center space-y-6">
+          <div class="border-b-2 border-amber-200 pb-4">
+            <span class="text-xs uppercase tracking-widest font-bold text-amber-700">Karya Penulis Muda</span>
+            <h4 id="card-title" class="text-2xl font-bubbly font-bold text-indigo-900 mt-1">Syair Alam Sekitar</h4>
+            <p id="card-author" class="text-xs text-slate-500 font-semibold">Ditulis oleh: Penulis Cilik Cemerlang</p>
+          </div>
+
+          <div class="space-y-3 py-2 text-base md:text-lg font-bubbly text-slate-800 leading-relaxed italic">
+            <p id="card-line-1">"Dengarlah anak ibu berpesan,"</p>
+            <p id="card-line-2">"Menuntut ilmu jadikan amalan,"</p>
+            <p id="card-line-3">"Janganlah malas wahai rakan,"</p>
+            <p id="card-line-4">"Kelak hidupmu cerah masa depan."</p>
+          </div>
+
+          <div class="pt-4 border-t-2 border-amber-200 flex items-center justify-between text-xs font-bold text-indigo-900">
+            <div class="flex items-center gap-1 text-amber-500">
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+            </div>
+            <span>Disahkan oleh: Robot Syair 🤖</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-center gap-4 pt-2">
+        <button onclick="speakSyair()" class="px-5 py-3 bg-sky-500 hover:bg-sky-600 text-white rounded-2xl font-bubbly font-bold text-sm btn-bubbly flex items-center gap-2">
+          <i class="fa-solid fa-volume-high text-lg"></i> Mendendangkan Syair (Suara)
+        </button>
+        <button onclick="copySyairText()" class="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bubbly font-bold text-sm btn-bubbly flex items-center gap-2">
+          <i class="fa-solid fa-copy text-lg"></i> Salin Syair
+        </button>
+        <button onclick="printCard()" class="px-5 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-bubbly font-bold text-sm btn-bubbly flex items-center gap-2">
+          <i class="fa-solid fa-print text-lg"></i> Cetak Sijil Penulis
+        </button>
+        <button onclick="showSection('step-write')" class="px-5 py-3 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-2xl font-bubbly font-bold text-sm btn-bubbly flex items-center gap-2">
+          <i class="fa-solid fa-rotate-left text-lg"></i> Edit Semula
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL PANDUAN SYAIR -->
+  <div id="help-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-card bg-white rounded-3xl max-w-md w-full p-6 border-4 border-indigo-300 space-y-4 relative">
+      <div class="flex items-center justify-between border-b pb-2">
+        <h3 class="font-bubbly font-bold text-xl text-indigo-900">📖 Apa itu Syair?</h3>
+        <button onclick="closeHelpModal()" class="text-slate-400 hover:text-slate-700 font-bold">✖</button>
+      </div>
+      <div class="space-y-3 text-sm text-slate-600">
+        <p><b>Syair</b> merupakan sejenis puisi Melayu lama. Ciri-ciri utamanya:</p>
+        <ul class="list-disc list-inside space-y-1 bg-indigo-50 p-3 rounded-xl font-medium text-indigo-950">
+          <li>Setiap rangkap ada <b>4 baris</b>.</li>
+          <li>Rima akhir wajib <b>a-a-a-a</b> (semua bunyi di hujung baris adalah sama).</li>
+          <li>Mempunyai <b>8 hingga 12 suku kata</b> bagi setiap baris.</li>
+          <li>Semua 4 baris membawa maksud cerita yang lengkap (tiada pembayang seperti pantun).</li>
+        </ul>
+      </div>
+      <button onclick="closeHelpModal()" class="w-full py-2.5 bg-indigo-600 text-white font-bubbly font-bold rounded-xl btn-bubbly">
+        Saya Faham!
+      </button>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC DENGAN TEMA DINAMIK UTK ROBOT -->
+  <script>
+    let currentTheme = 'Umum';
+    let lineRhymes = ['', '', '', ''];
+    let lineSylCounts = [0, 0, 0, 0];
+
+    // Bank contoh syair sedia ada mengikut tema utama
+    const sampleSyairs = {
+      'Alam Sekitar': [
+        "Rimbalah hijau tempat berteduh,",
+        "Jangan ditebang pokok diruntuh,",
+        "Sungai yang jernih jangan dikeruh,",
+        "Jagalah alam janganlah runtuh."
+      ],
+      'Hormati Guru': [
+        "Wahai murid dengar pesanan,",
+        "Hormati guru jadikan amalan,",
+        "Tunjuk dan ajar penumpu jalan,",
+        "Ilmu diberi pemangku insan."
+      ],
+      'Rukun Negara': [
+        "Rukun negara lima perkara,",
+        "Panduan kita rakyat sejahtera,",
+        "Cinta akan tanah udara,",
+        "Aman sentosa seluruh negara."
+      ],
+      'Sahabat Baik': [
+        "Sahabat setia sentiasa ada,",
+        "Suka dan duka bersama berada,",
+        "Bantu membantu jiwa yang muda,",
+        "Kasih sahabat terpahat di dada."
+      ],
+      'Menuntut Ilmu': [
+        "Dengarlah anak ibu berpesan,",
+        "Menuntut ilmu jadikan amalan,",
+        "Janganlah malas wahai rakan,",
+        "Kelak hidupmu cerah masa depan."
+      ]
+    };
+
+    const rhymeDict = {
+      'an': ['pesan', 'amalan', 'rakan', 'depan', 'taman', 'insan', 'harapan', 'panduan'],
+      'it': ['langit', 'bukit', 'sedikit', 'terbit', 'perit', 'perakit', 'cungkit'],
+      'i': ['budi', 'suci', 'hati', 'bakti', 'murni', 'pertiwi', 'sekali', 'kembali'],
+      'ah': ['indah', 'sekolah', 'lelah', 'megah', 'pantang menyerah', 'langkah', 'petunjuk arah'],
+      'ar': ['belajar', 'pintar', 'berkibar', 'terbar', 'dengar', 'segar', 'sebenar']
+    };
+
+    function countSyllablesMalay(wordOrSentence) {
+      if (!wordOrSentence || wordOrSentence.trim() === '') return 0;
+      let text = wordOrSentence.toLowerCase().trim().replace(/[^a-z\s]/g, '');
+      if (!text) return 0;
+      const vowels = text.match(/[aeiouəɛoɔ]/g);
+      if (!vowels) return 1;
+      let count = vowels.length;
+      const diphthongs = text.match(/(ai|au|oi)/g);
+      if (diphthongs) count -= diphthongs.length;
+      return Math.max(1, count);
+    }
+
+    function getRhymeSuffix(sentence) {
+      if (!sentence || sentence.trim() === '') return '';
+      const words = sentence.trim().toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/);
+      const lastWord = words[words.length - 1];
+      if (!lastWord) return '';
+      if (lastWord.length <= 3) return lastWord;
+      return lastWord.slice(-2);
+    }
+
+    function showSection(sectionId) {
+      document.getElementById('step-theme').classList.add('hidden');
+      document.getElementById('step-write').classList.add('hidden');
+      document.getElementById('step-result').classList.add('hidden');
+
+      document.getElementById(sectionId).classList.remove('hidden');
+
+      if (sectionId === 'step-theme') {
+        updateRobotSpeech("Jom Pilih Tema! 🎨", "Pilih tema yang anak-anak suka di bawah untuk kita mula membuat syair!", "happy");
+      } else if (sectionId === 'step-write') {
+        updateRobotSpeech("Masa Menulis Syair! ✍️", "Tulis baris demi baris. Pastikan suku kata 8-12 & rima hiasan sama!", "thinking");
+        validateAllLines();
+      } else if (sectionId === 'step-result') {
+        updateRobotSpeech("Wah, Hebatnya Syair Ini! 🎉", "Syair siap sepenuhnya! Anda layak mendapat Sijil Penulis Muda!", "celebrate");
+      }
+    }
+
+    function updateRobotSpeech(title, text, mood = 'happy') {
+      document.getElementById('robot-speech-title').innerText = title;
+      document.getElementById('robot-speech-text').innerText = text;
+
+      const eyeL = document.getElementById('bot-eye-left');
+      const eyeR = document.getElementById('bot-eye-right');
+      const mouth = document.getElementById('bot-mouth');
+      const ball = document.getElementById('bot-antenna-ball');
+
+      if (mood === 'happy') {
+        eyeL.setAttribute('r', '10'); eyeR.setAttribute('r', '10');
+        mouth.setAttribute('d', 'M 80 100 Q 100 115 120 100');
+        ball.setAttribute('fill', '#F59E0B');
+      } else if (mood === 'thinking') {
+        eyeL.setAttribute('r', '7'); eyeR.setAttribute('r', '12');
+        mouth.setAttribute('d', 'M 80 105 Q 100 95 120 105');
+        ball.setAttribute('fill', '#3B82F6');
+      } else if (mood === 'celebrate') {
+        eyeL.setAttribute('r', '11'); eyeR.setAttribute('r', '11');
+        mouth.setAttribute('d', 'M 75 95 Q 100 125 125 95');
+        ball.setAttribute('fill', '#10B981');
+      }
+    }
+
+    function selectTheme(themeName, emoji, description) {
+      currentTheme = themeName;
+      document.getElementById('active-theme-tag').innerText = `Tema: ${emoji} ${themeName}`;
+      document.getElementById('card-title').innerText = `Syair ${themeName}`;
+      updateRobotSpeech(`Tema Terpilih: ${themeName}! ${emoji}`, `Bagus! ${description} Sekarang jom kita ke Studio Penulisan!`, "happy");
+      showSection('step-write');
+    }
+
+    function applyCustomTheme() {
+      const val = document.getElementById('custom-theme-input').value.trim();
+      if (!val) { alert("Sila taip tema yang anda inginkan terlebih dahulu!"); return; }
+      selectTheme(val, '✨', `Tema khas: ${val}`);
+    }
+
+    function usePrompt(promptText) {
+      document.getElementById('line-1').value = promptText;
+      showSection('step-write');
+    }
+
+    function analyzeLine(lineNum) {
+      const inputVal = document.getElementById(`line-${lineNum}`).value;
+      const sylCount = countSyllablesMalay(inputVal);
+      const rhyme = getRhymeSuffix(inputVal);
+
+      lineRhymes[lineNum - 1] = rhyme;
+      lineSylCounts[lineNum - 1] = sylCount;
+
+      const sylBadge = document.getElementById(`syllable-count-${lineNum}`);
+      const rhymeBadge = document.getElementById(`rhyme-tag-${lineNum}`);
+      const feedback = document.getElementById(`feedback-line-${lineNum}`);
+
+      sylBadge.innerText = `${sylCount} Suku Kata`;
+      if (sylCount >= 8 && sylCount <= 12) {
+        sylBadge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";
+        feedback.innerText = "✅ Suku kata betul (8-12)!";
+        feedback.className = "text-xs font-semibold text-emerald-600 italic";
+      } else if (sylCount > 0 && sylCount < 8) {
+        sylBadge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800";
+        feedback.innerText = "⚠️ Terlalu pendek (Mesti 8-12 suku kata).";
+        feedback.className = "text-xs font-semibold text-amber-600 italic";
+      } else if (sylCount > 12) {
+        sylBadge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-rose-100 text-rose-800";
+        feedback.innerText = "⚠️ Terlalu panjang (Mesti 8-12 suku kata).";
+        feedback.className = "text-xs font-semibold text-rose-600 italic";
+      } else {
+        sylBadge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600";
+        feedback.innerText = "";
+      }
+
+      if (rhyme) {
+        rhymeBadge.innerText = `Rima: "${rhyme}"`;
+        const firstRhyme = lineRhymes[0];
+        if (lineNum > 1 && firstRhyme) {
+          if (rhyme === firstRhyme) {
+            rhymeBadge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";
+          } else {
+            rhymeBadge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-rose-100 text-rose-800";
+          }
+        } else {
+          rhymeBadge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-800";
+        }
+      } else {
+        rhymeBadge.innerText = "Rima: -";
+        rhymeBadge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600";
+      }
+
+      validateAllLines();
+    }
+
+    function validateAllLines() {
+      const btn = document.getElementById('btn-submit-syair');
+      const msg = document.getElementById('validation-msg');
+      const icon = document.getElementById('submit-icon');
+      
+      let isValid = true;
+      let reason = [];
+      const firstRhyme = lineRhymes[0];
+
+      for (let i = 0; i < 4; i++) {
+        const lineVal = document.getElementById(`line-${i+1}`).value.trim();
+        const syl = lineSylCounts[i];
+        const rhyme = lineRhymes[i];
+
+        if (!lineVal) {
+          isValid = false;
+          reason.push(`Baris ${i+1} belum diisi.`);
+          continue;
+        }
+
+        if (syl < 8 || syl > 12) {
+          isValid = false;
+          reason.push(`Baris ${i+1} mesti 8-12 suku kata (sekarang ${syl}).`);
+        }
+
+        if (i > 0 && firstRhyme && rhyme !== firstRhyme) {
+          isValid = false;
+          reason.push(`Rima Baris ${i+1} ("${rhyme}") tidak sama dengan Baris 1 ("${firstRhyme}").`);
+        }
+      }
+
+      if (isValid) {
+        btn.disabled = false;
+        btn.className = "px-8 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bubbly font-bold text-base btn-bubbly shadow-lg flex items-center gap-2 cursor-pointer";
+        icon.className = "fa-solid fa-circle-check text-xl";
+        msg.className = "p-3 bg-emerald-50 border-2 border-emerald-200 rounded-xl text-xs font-bold text-emerald-800 text-center";
+        msg.innerHTML = "🎉 Tahniah! Semua baris memenuhi syarat syair (8-12 suku kata & rima a-a-a-a). Sijil sedia dibuka!";
+      } else {
+        btn.disabled = true;
+        btn.className = "px-8 py-3.5 bg-slate-300 text-slate-500 cursor-not-allowed rounded-2xl font-bubbly font-bold text-base btn-bubbly shadow-none flex items-center gap-2 transition-all";
+        icon.className = "fa-solid fa-lock text-xl";
+        msg.className = "p-3 bg-rose-50 border-2 border-rose-200 rounded-xl text-xs font-bold text-rose-700 text-center";
+        msg.innerHTML = `🔒 <b>Sijil Dikunci:</b> ${reason[0] || 'Sila semak baris penulisan anda.'}`;
+      }
+    }
+
+    // FUNGSI PENJANAAN CONOH SYAIR DINAMIK UNTUK TEMA KHAS
+    function generateAIExample() {
+      let lines = [];
+      
+      // Jika tema yang dipilih merupakan salah satu daripada kad asas
+      if (sampleSyairs[currentTheme]) {
+        lines = sampleSyairs[currentTheme];
+      } else {
+        // Jika murid taip TEMA KHAS SENDIRI (seperti Kucing, Ibu, Sukan dll), Robot jana contoh automatik ikut tema murid:
+        const t = currentTheme.toLowerCase();
+        
+        if (t.includes('kucing') || t.includes('haiwan') || t.includes('comel')) {
+          lines = [
+            `Comel sungguh si kucing ini,`,
+            `Bulu halus putih berseri,`,
+            `Manja bermain sepanjang hari,`,
+            `Sayang dipelihara setiap hari.`
+          ];
+        } else if (t.includes('ibu') || t.includes('bonda') || t.includes('emak') || t.includes('mama')) {
+          lines = [
+            `Kasih ibu tidak terperi,`,
+            `Mengasuh kita setiap hari,`,
+            `Pengorbanan mulia suci murni,`,
+            `Wajib dijaga sepanjang hari.`
+          ];
+        } else if (t.includes('bapa') || t.includes('ayah') || t.includes('bapaku')) {
+          lines = [
+            `Ayah bekerja tanpa lelah,`,
+            `Mencari rezeki penat terbilang,`,
+            `Mendidik anak tiada menyerah,`,
+            `Bakti ayah memancar gilang.`
+          ];
+        } else if (t.includes('sukan') || t.includes('bola') || t.includes('lari')) {
+          lines = [
+            `Badan sihat cergas bersukan,`,
+            `Main bersama rakan dan taulan,`,
+            `Menang kalah bukan ukuran,`,
+            `Semangat sukan jadikan amalan.`
+          ];
+        } else {
+          // Penjana generik dinamik jika tema tersendiri yang lain dimasukkan
+          lines = [
+            `Perkara ${currentTheme} amat berguna,`,
+            `Membawa kebaikan di mana-mana,`,
+            `Mari amalkan bersama-sama,`,
+            `Hidup bahagia sejahtera sentiasa.`
+          ];
+        }
+      }
+
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById(`line-${i}`).value = lines[i - 1];
+        analyzeLine(i);
+      }
+      updateRobotSpeech("Tadaaa! 🪄", `Robot telah hasilkan contoh syair penuh bagi tema "${currentTheme}"! Anda boleh terus buka sijil atau ubah mengikut idea sendiri!`, "celebrate");
+    }
+
+    function toggleRhymeHelper() {
+      document.getElementById('rhyme-helper').classList.toggle('hidden');
+    }
+
+    function showRhymeWords(key) {
+      const display = document.getElementById('rhyme-words-display');
+      const words = rhymeDict[key] || [];
+      display.innerHTML = `Cadangan perkataan berima <b>"...${key}"</b>: <br><span class="text-indigo-700 font-bold">${words.join(', ')}</span>`;
+    }
+
+    function finalizeSyair() {
+      const l1 = document.getElementById('line-1').value.trim();
+      const l2 = document.getElementById('line-2').value.trim();
+      const l3 = document.getElementById('line-3').value.trim();
+      const l4 = document.getElementById('line-4').value.trim();
+
+      document.getElementById('card-line-1').innerText = `"${l1}"`;
+      document.getElementById('card-line-2').innerText = `"${l2}"`;
+      document.getElementById('card-line-3').innerText = `"${l3}"`;
+      document.getElementById('card-line-4').innerText = `"${l4}"`;
+
+      showSection('step-result');
+
+      confetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
+    }
+
+    function speakSyair() {
+      const l1 = document.getElementById('card-line-1').innerText;
+      const l2 = document.getElementById('card-line-2').innerText;
+      const l3 = document.getElementById('card-line-3').innerText;
+      const l4 = document.getElementById('card-line-4').innerText;
+
+      const fullText = `${l1}. ${l2}. ${l3}. ${l4}.`;
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(fullText);
+        utterance.lang = 'id-ID';
+        utterance.rate = 0.85;
+        utterance.pitch = 1.0;
+        window.speechSynthesis.speak(utterance);
+      } else {
+        alert("Maaf, fungsi membaca suara tidak disokong pada pelayar ini.");
+      }
+    }
+
+    function copySyairText() {
+      const title = document.getElementById('card-title').innerText;
+      const l1 = document.getElementById('card-line-1').innerText;
+      const l2 = document.getElementById('card-line-2').innerText;
+      const l3 = document.getElementById('card-line-3').innerText;
+      const l4 = document.getElementById('card-line-4').innerText;
+
+      const textToCopy = `${title}\n\n${l1}\n${l2}\n${l3}\n${l4}\n\n(Dicipta menggunakan Robot Syair)`;
+
+      const tempInput = document.createElement("textarea");
+      tempInput.value = textToCopy;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand("copy");
+      document.body.removeChild(tempInput);
+
+      alert("Syair telah berjaya disalin! 📋");
+    }
+
+    function printCard() {
+      window.print();
+    }
+
+    function openHelpModal() {
+      document.getElementById('help-modal').classList.remove('hidden');
+    }
+    function closeHelpModal() {
+      document.getElementById('help-modal').classList.add('hidden');
+    }
+
+    window.onload = function() {
+      showSection('step-theme');
+    };
+  </script>
+</body>
+</html>
